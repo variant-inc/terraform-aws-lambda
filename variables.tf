@@ -17,8 +17,8 @@ variable "create_role" {
 
 variable "policy" {
   description = "List of additional policies for Lambda access."
-  type = list(any)
-  default = []
+  type        = list(any)
+  default     = []
 }
 
 variable "role" {
@@ -40,7 +40,7 @@ variable "timeout" {
 }
 
 variable "package_type" {
-  description = "Type of package. For now this module supports only Image, not Zip."
+  description = "Type of package. Image or Zip."
   type        = string
   default     = "Image"
 }
@@ -54,12 +54,31 @@ variable "publish" {
 variable "image_uri" {
   description = "URI of ECR image used for this Lambda Function."
   type        = string
+  default     = ""
 }
 
 variable "image_config" {
   description = "Additional image config for overriding thing in the image."
   type        = any
   default     = {}
+}
+
+variable "filename" {
+  description = "Filename of Zip archive containing the code."
+  type        = string
+  default     = ""
+}
+
+variable "handler" {
+  description = "Custom entrypoint which has to be set if we use file based deployment."
+  type        = string
+  default     = ""
+}
+
+variable "runtime" {
+  description = "Runtime config for file based deployment."
+  type        = string
+  default     = ""
 }
 
 variable "dead_letter_target" {
@@ -95,7 +114,7 @@ variable "vpc_config" {
 variable "aliases" {
   description = "Map of aliases and their config."
   type        = any
-  default     = {
+  default = {
     prod = {
       description = "Default alias"
       version     = "$LATEST"

@@ -14,6 +14,9 @@
     - [publish](#publish)
     - [image_uri](#image_uri)
     - [image_config](#image_config)
+    - [filename](#filename)
+    - [handler](#handler)
+    - [runtime](#runtime)
     - [dead_letter_target](#dead_letter_target)
     - [kms_key_arn](#kms_key_arn)
     - [environment_variables](#environment_variables)
@@ -44,8 +47,11 @@
 | timeout | number | 3 | 600 |  |
 | package_type | string | "Image" | "Zip" |  |
 | publish | bool | true | false |  |
-| image_uri | string |  | "319244236588.dkr.ecr.us-east-1.amazonaws.com/test-image:latest" |  |
+| image_uri | string | "" | "319244236588.dkr.ecr.us-east-1.amazonaws.com/test-image:latest" |  |
 | image_config | any | {} | `see below` |  |
+| filename | string | "" | "test-lambda.zip" |  |
+| handler | string | "" | "index.test" |  |
+| runtime | string | "" | "python3.9" | [Runtimes]<https://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunction.html#SSS-CreateFunction-request-Runtime> |
 | dead_letter_target | string | "" | "arn:aws:sns:us-east-1:319244236588:test-sns-lambda-dl" |  |
 | kms_key_arn | string | "" | "arn:aws:kms:us-east-1:319244236588:key/dfed962d-0968-42b4-ad36-7762dac7ca20" |  |
 | environment_variables | any | {} | {"var1": "value1"} |  |
@@ -139,7 +145,6 @@ Default:
 
 ### package_type
 Type of package for Lambda Function.
-This module supports only `Image`, other type is `Zip`
 ```json
 "package_type": "<Image or Zip>"
 ```
@@ -161,9 +166,15 @@ Default:
 ```
 
 ### image_uri
-"URI of ECR image used for this Lambda Function."
+URI of ECR image used for this Lambda Function.
+Conflicts with `filename`, use only if `package_type` is set to `"Image"`.
 ```json
 "image_uri": "<image uri from ECR>"
+```
+
+Default:
+```json
+"image_uri": ""
 ```
 
 ### image_config
@@ -179,6 +190,42 @@ Additional config for image, used to override entrypoint, command and working di
 Default:
 ```json
 "image_config": {}
+```
+
+### filename
+Filename of Zip archive containing the code.
+Conflicts with `image_uri`, use only if `package_type` is set to `"Zip"`.
+```json
+"filename": "<Zip archive name>"
+```
+
+Default:
+```json
+"filename": ""
+```
+
+### handler
+Custom entrypoint which can be used if we use file based deployment.
+```json
+"handler": "<name of custom handler file>"
+```
+
+Default:
+```json
+"handler": ""
+```
+| runtime | string | "" | "python3.9" | [Runtimes]<https://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunction.html#SSS-CreateFunction-request-Runtime> |
+
+### runtime
+Runtime config for file based deployment.
+Supported runtimes: <https://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunction.html#SSS-CreateFunction-request-Runtime>
+```json
+"runtime": "<name of the runtime>"
+```
+
+Default:
+```json
+"runtime": ""
 ```
 
 ### dead_letter_target
@@ -336,7 +383,7 @@ Default:
 ### `main.tf`
 ```terarform
 module "lambda" {
-  source = "github.com/variant-inc/terraform-aws-lambda?refs=v1"
+  source = "github.com/variant-inc/terraform-aws-lambda?ref=v1"
 
   name        = var.name
   description = var.description
@@ -351,6 +398,9 @@ module "lambda" {
   publish       = var.publish
   image_uri     = var.image_uri
   image_config  = var.image_config
+  filename      = var.filename
+  handler       = var.handler
+  runtime       = var.runtime
 
   dead_letter_target    = var.dead_letter_target
   kms_key_arn           = var.kms_key_arn

@@ -1,3 +1,3 @@
 output "arn" {
-  values = aws_lambda_function.function.arn
+  value = aws_lambda_function.function.arn
 }

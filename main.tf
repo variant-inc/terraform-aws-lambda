@@ -1,5 +1,5 @@
 locals {
-  async_destinations = try(distinct(flatten([ for i in values(var.event_invoke): values(i.destination_config) ])), [])
+  async_destinations = try(distinct(flatten([for i in values(var.event_invoke) : values(i.destination_config)])), [])
 }
 
 resource "aws_iam_role" "role" {
@@ -25,8 +25,8 @@ resource "aws_iam_role" "role" {
     "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy"
   ]
 
-  dynamic inline_policy {
-    for_each = length(var.dead_letter_target) != 0 ? [ true ] : []
+  dynamic "inline_policy" {
+    for_each = length(var.dead_letter_target) != 0 ? [true] : []
 
     content {
       name = "lambda-deadletter"
@@ -34,7 +34,7 @@ resource "aws_iam_role" "role" {
         "Version" : "2012-10-17",
         "Statement" : [
           {
-            "Sid"    : "deadletteraccess"
+            "Sid" : "deadletteraccess"
             "Effect" : "Allow",
             "Action" : [
               "sqs:SendMessage",
@@ -47,8 +47,8 @@ resource "aws_iam_role" "role" {
     }
   }
 
-  dynamic inline_policy {
-    for_each = length(local.async_destinations) != 0 ? [ true ] : []
+  dynamic "inline_policy" {
+    for_each = length(local.async_destinations) != 0 ? [true] : []
 
     content {
       name = "lambda_async_destination_permissions"
@@ -56,7 +56,7 @@ resource "aws_iam_role" "role" {
         "Version" : "2012-10-17",
         "Statement" : [
           {
-            "Sid"    : "asyncdestaccess"
+            "Sid" : "asyncdestaccess"
             "Effect" : "Allow",
             "Action" : [
               "sqs:SendMessage",
@@ -71,11 +71,11 @@ resource "aws_iam_role" "role" {
     }
   }
 
-  dynamic inline_policy {
+  dynamic "inline_policy" {
     for_each = var.policy
 
     content {
-      name = lookup(inline_policy.value, "name", "")
+      name   = lookup(inline_policy.value, "name", "")
       policy = jsonecode(lookup(inline_policy.value, "policy", {}))
     }
   }
@@ -83,7 +83,7 @@ resource "aws_iam_role" "role" {
 
 resource "aws_lambda_permission" "permission" {
   for_each = var.lambda_permissions
-  
+
   statement_id  = each.key
   action        = lookup(each.value, "action", "lambda:InvokeFunction")
   function_name = aws_lambda_function.function.function_name
@@ -100,14 +100,14 @@ resource "aws_lambda_function_event_invoke_config" "event_invoke" {
   ]
 
   function_name = aws_lambda_function.function.function_name
-  
-  maximum_event_age_in_seconds  = lookup(each.value, "max_age", null)
-  maximum_retry_attempts        = lookup(each.value, "max_retry", null)
-  qualifier                     = lookup(each.value, "qualifier", null)
 
-  dynamic destination_config {
-    for_each = lookup(each.value, "destination_config", {}) != {} ? [ lookup(each.value, "destination_config", {}) ] : []
-    
+  maximum_event_age_in_seconds = lookup(each.value, "max_age", null)
+  maximum_retry_attempts       = lookup(each.value, "max_retry", null)
+  qualifier                    = lookup(each.value, "qualifier", null)
+
+  dynamic "destination_config" {
+    for_each = lookup(each.value, "destination_config", {}) != {} ? [lookup(each.value, "destination_config", {})] : []
+
     content {
       on_failure {
         destination = lookup(destination_config.value, "failure_destination", null)
@@ -130,9 +130,9 @@ resource "aws_lambda_function" "function" {
   package_type = var.package_type
   publish      = var.publish
 
-  image_uri = var.image_uri
+  image_uri = var.package_type == "Image" ? var.image_uri : null
   dynamic "image_config" {
-    for_each = var.image_config != {} ? [ var.image_config ] : []
+    for_each = var.image_config != {} ? [var.image_config] : []
 
     content {
       command           = lookup(image_config.value, "command", [])
@@ -140,6 +140,11 @@ resource "aws_lambda_function" "function" {
       working_directory = lookup(image_config.value, "working_directory", "")
     }
   }
+
+  filename         = var.package_type == "Zip" ? var.filename : null
+  source_code_hash = var.package_type == "Zip" ? filebase64sha256(var.filename) : null
+  handler          = var.package_type == "Zip" ? var.handler : null
+  runtime          = var.package_type == "Zip" ? var.runtime : null
 
   dynamic "dead_letter_config" {
     for_each = length(var.dead_letter_target) != 0 ? [true] : []
@@ -151,7 +156,7 @@ resource "aws_lambda_function" "function" {
 
   kms_key_arn = length(var.kms_key_arn) != 0 ? var.kms_key_arn : null
   dynamic "environment" {
-    for_each = var.environment_variables != {} ? [ true ] : []
+    for_each = var.environment_variables != {} ? [true] : []
 
     content {
       variables = var.environment_variables
@@ -167,7 +172,7 @@ resource "aws_lambda_function" "function" {
   }
 
   dynamic "vpc_config" {
-    for_each = [ var.vpc_config ]
+    for_each = [var.vpc_config]
 
     content {
       security_group_ids = lookup(vpc_config.value, "security_group_ids", [])
@@ -179,13 +184,13 @@ resource "aws_lambda_function" "function" {
 resource "aws_lambda_alias" "alias" {
   for_each = var.aliases
 
-  name = each.key
-  description = lookup(each.value, "description", null)
-  function_name = aws_lambda_function.function.arn
+  name             = each.key
+  description      = lookup(each.value, "description", null)
+  function_name    = aws_lambda_function.function.arn
   function_version = lookup(each.value, "version", "$LATEST")
-  dynamic routing_config {
-    for_each = lookup(each.value, "additional_version_weights", {}) != {} ? [ true ] : []
-    
+  dynamic "routing_config" {
+    for_each = lookup(each.value, "additional_version_weights", {}) != {} ? [true] : []
+
     content {
       additional_version_weights = lookup(each.value, "additional_version_weights", {})
     }
