@@ -210,7 +210,3 @@ resource "aws_cloudwatch_log_subscription_filter" "test_lambdafunction_logfilter
   filter_pattern  = var.filter_pattern
   destination_arn = data.aws_lambda_function.reciever[0].arn
 }
-
-provider "aws" {
-  region = "us-east-1"
-}
