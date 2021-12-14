@@ -151,3 +151,9 @@ variable "filter_pattern" {
   type        = string
   default     = "?ERROR ?event_log"
 }
+
+variable "enable_apigw" {
+  description = "Switch for creatin API Gateway together with this Lambda."
+  type        = bool
+  default     = false
+}

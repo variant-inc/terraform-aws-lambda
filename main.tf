@@ -215,3 +215,29 @@ resource "aws_cloudwatch_log_subscription_filter" "test_lambdafunction_logfilter
   filter_pattern  = var.filter_pattern
   destination_arn = data.aws_lambda_function.reciever[0].arn
 }
+
+module "apigw" {
+  source = "../terraform-aws-apigateway-v2"
+  #source = "github.com/variant-inc/terraform-aws-apigateway-v2?ref=v1"
+  count = var.enable_apigw ? 1 : 0
+
+  name = format("%s-apigw", var.name)
+  description   = format("API Gateway created for %s Lambda by terraform.", var.name)
+  integrations = {
+    for k,v in var.aliases : k => merge(
+      {"integration_uri" = aws_lambda_alias.alias[k].invoke_arn},
+      {"payload_format_version" = "2.0"},
+      v
+    )
+  }
+}
+
+resource "aws_lambda_permission" "apigw" {
+  count = var.enable_apigw ? 1 : 0
+
+  statement_id  = module.apigw[0].id
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.function.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = join("/", [split("/", module.apigw[0].default_arn)[0], "*", "$default"])
+}

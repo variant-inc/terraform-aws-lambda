@@ -11,6 +11,7 @@
     - [memory_size](#memory_size)
     - [timeout](#timeout)
     - [package_type](#package_type)
+    - [enable_apigw](#enable_apigw)
     - [publish](#publish)
     - [image_uri](#image_uri)
     - [image_config](#image_config)
@@ -47,6 +48,7 @@
 | timeout | number | 3 | 600 |  |
 | package_type | string | "Image" | "Zip" |  |
 | publish | bool | true | false |  |
+| enable_apigw | bool | false | true |  |
 | image_uri | string | "" | "319244236588.dkr.ecr.us-east-1.amazonaws.com/test-image:latest" |  |
 | image_config | any | {} | `see below` |  |
 | filename | string | "" | "test-lambda.zip" |  |
@@ -152,6 +154,17 @@ Type of package for Lambda Function.
 Default:
 ```json
 "package_type": "Image"
+```
+
+### enable_apigw
+Switch for enabling creation of API Gateway with this Lambda Function.
+```json
+"enable_apigw": <true or false>
+```
+
+Default:
+```json
+"enable_apigw": false
 ```
 
 ### publish
@@ -289,10 +302,22 @@ Default:
 ```
 
 ### aliases
-ARN of the KSM key used to encrypt environment variables.
-Multiple aliases can be specified together with waighted versions.
+Map of all aliases with versions for which they apply.
+By default i created `prod` with `$LATEST` version, this is ignored if something else is set.
+It also includes routes configuration for specific aliases in case API Gateway is created with module `enable_apigw` set to `true`.
 ```json
-"aliases": "<ARN of KMS key>"
+"aliases": {
+  "<alias name>": {
+    "description": "<alias description>",
+    "version": <version number or "$LATEST">,
+    "routes_config": [
+      {
+        "key": "<combination of action and path i.e. GET /dev> or just $default which will catch all requests on endpoint>",
+        "authorization_type": "<NONE or AWS_IAM supported in current version>"
+      }
+    ]
+  }
+}
 ```
 
 Default:
@@ -300,7 +325,8 @@ Default:
 "aliases": {
   "prod": {
     "description": "Default alias",
-    "version": "$LATEST"
+    "version": "$LATEST",
+    "routes_config"
   }
 }
 ```
@@ -394,6 +420,7 @@ module "lambda" {
   memory_size   = var.memory_size
   timeout       = var.timeout
   package_type  = var.package_type
+  enable_apigw  = var.enable_apigw
 
   publish       = var.publish
   image_uri     = var.image_uri
@@ -426,6 +453,7 @@ module "lambda" {
   "timeout": 5,
   "package_type": "Image",
   "publish": true,
+  "enable_apigw": true,
   "image_uri": "319244236588.dkr.ecr.us-east-1.amazonaws.com/luka-test:latest",
   "image_config": {
     "command": [],
@@ -445,10 +473,22 @@ module "lambda" {
   "aliases": {
     "prod": {
       "description": "Production alias.",
-      "version": 1
+      "version": 1,
+      "routes_config": [
+        {
+          "key": "$default",
+          "authorization_type": "NONE"
+        }
+      ]
     },
     "dev": {
-      "version": "$LATEST"
+      "version": "$LATEST",
+      "routes_config": [
+        {
+          "key": "GET /dev",
+          "authorization_type": "NONE"
+        }
+      ]
     }
   },
   "lambda_permissions": {
