@@ -9,6 +9,12 @@ variable "description" {
   default     = ""
 }
 
+variable "tags" {
+  type        = map(string)
+  description = "Tags for S3 bucket"
+  default     = {}
+}
+
 variable "create_role" {
   description = "Specifies should role be created with module or will there be external one provided."
   type        = bool

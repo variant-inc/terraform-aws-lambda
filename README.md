@@ -5,6 +5,7 @@
   - [Variable definitions](#variable-definitions)
     - [name](#name)
     - [description](#description)
+    - [tags](#tags)
     - [create_role](#create_role)
     - [policy](#policy)
     - [role](#role)
@@ -41,6 +42,7 @@
 | -------- | ------- | --------- | ----------- | ------- |
 | name | string |  | "test-lambda" |  |
 | description | string | "" | "Test Lambda function" |  |
+| tags | map(string) | {} | {"environment": "prod"} | |
 | create_role | bool | true | false |  |
 | policy | list(any) | [] | `see below` |  |
 | role | string | "" | "arn:aws:iam::319244236588:role/service-role/test-lambda-role" |  |
@@ -83,6 +85,17 @@ Description of the lambda function.
 Default:
 ```json
 "description": ""
+```
+
+### tags
+Tags for created bucket.
+```json
+"tags": {<map of tag keys and values>}
+```
+
+Default:
+```json
+"tags": {}
 ```
 
 ### create_role
@@ -413,6 +426,7 @@ module "lambda" {
 
   name        = var.name
   description = var.description
+  tags        = var.tags
   create_role = var.create_role
   policy      = var.policy
   role        = var.role
@@ -448,6 +462,9 @@ module "lambda" {
 {
   "name": "test-lambda",
   "description": "This is Lambda for testing the module.",
+  "tags": {
+    "environment": "prod"
+  },
   "create_role": true,
   "memory_size": 128,
   "timeout": 5,

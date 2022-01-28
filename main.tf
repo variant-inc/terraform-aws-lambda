@@ -5,6 +5,7 @@ locals {
 resource "aws_iam_role" "role" {
   count = var.create_role ? 1 : 0
   name  = format("AWSLambdaServiceRole-%s", var.name)
+  tags  = var.tags
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -123,6 +124,7 @@ resource "aws_lambda_function_event_invoke_config" "event_invoke" {
 resource "aws_lambda_function" "function" {
   function_name = var.name
   description   = var.description
+  tags          = var.tags
   role          = var.create_role ? aws_iam_role.role[0].arn : var.role
 
   memory_size  = var.memory_size
@@ -199,6 +201,7 @@ resource "aws_lambda_alias" "alias" {
 
 resource "aws_cloudwatch_log_group" "log_group" {
   name = format("/aws/lambda/%s", var.name)
+  tags = var.tags
 }
 
 data "aws_lambda_function" "reciever" {
@@ -223,6 +226,7 @@ module "apigw" {
 
   name = format("%s-apigw", var.name)
   description   = format("API Gateway created for %s Lambda by terraform.", var.name)
+  tags = var.tags
   integrations = {
     for k,v in var.aliases : k => merge(
       {"integration_uri" = aws_lambda_alias.alias[k].invoke_arn},

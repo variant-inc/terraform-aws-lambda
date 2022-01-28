@@ -3,3 +3,4 @@
   * Initial commit
   * support for file based deployments
   * support for automatic API GW creation
+  * add support for tags
