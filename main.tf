@@ -220,8 +220,7 @@ resource "aws_cloudwatch_log_subscription_filter" "test_lambdafunction_logfilter
 }
 
 module "apigw" {
-  source = "../terraform-aws-apigateway-v2"
-  #source = "github.com/variant-inc/terraform-aws-apigateway-v2?ref=v1"
+  source = "github.com/variant-inc/terraform-aws-apigateway-v2?ref=v1"
   count = var.enable_apigw ? 1 : 0
 
   name = format("%s-apigw", var.name)
