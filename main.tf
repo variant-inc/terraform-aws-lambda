@@ -2,6 +2,8 @@ locals {
   async_destinations = try(distinct(flatten([for i in values(var.event_invoke) : values(i.destination_config)])), [])
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_iam_role" "role" {
   count = var.create_role ? 1 : 0
   name  = format("AWSLambdaServiceRole-%s", var.name)
@@ -19,12 +21,18 @@ resource "aws_iam_role" "role" {
     ]
   })
 
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-    "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
-    "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
-    "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy"
-  ]
+  managed_policy_arns = concat(
+    [
+      "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+      "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+      "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess",
+      "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy"
+    ],
+    [
+      format("arn:aws:iam::%s:policy/epsagon-token_read", data.aws_caller_identity.current.account_id)
+    ],
+    var.managed_policies
+  )
 
   dynamic "inline_policy" {
     for_each = length(var.dead_letter_target) != 0 ? [true] : []

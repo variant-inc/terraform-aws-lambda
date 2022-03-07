@@ -8,6 +8,7 @@
     - [tags](#tags)
     - [create_role](#create_role)
     - [policy](#policy)
+    - [managed_policies](#managed_policies)
     - [role](#role)
     - [memory_size](#memory_size)
     - [timeout](#timeout)
@@ -45,6 +46,7 @@
 | tags | map(string) | {} | {"environment": "prod"} | |
 | create_role | bool | true | false |  |
 | policy | list(any) | [] | `see below` |  |
+| managed_policies | list(string) | [] | `see below` |  |
 | role | string | "" | "arn:aws:iam::319244236588:role/service-role/test-lambda-role" |  |
 | memory_size | number | 128 | 4096 |  |
 | timeout | number | 3 | 600 |  |
@@ -121,6 +123,18 @@ Effective only if `create_role` is set to `true`.
 Default:
 ```json
 "policy": []
+```
+
+### managed_policies
+Additional managed policies which should be attached to auto-created role.
+Effective only if `create_role` is set to `true`.
+```json
+"managed_policies": [<list of managed policies>]
+```
+
+Default:
+```json
+"managed_policies": []
 ```
 
 ### role
@@ -427,9 +441,11 @@ module "lambda" {
   name        = var.name
   description = var.description
   tags        = var.tags
-  create_role = var.create_role
-  policy      = var.policy
-  role        = var.role
+
+  create_role      = var.create_role
+  policy           = var.policy
+  managed_policies = var.managed_policies
+  role             = var.role
 
   memory_size   = var.memory_size
   timeout       = var.timeout
@@ -465,6 +481,9 @@ module "lambda" {
   "tags": {
     "environment": "prod"
   },
+  "managed_policies": [
+    "arn:aws:iam::319244236588:policy/example-managed-policy"
+  ],
   "create_role": true,
   "memory_size": 128,
   "timeout": 5,
